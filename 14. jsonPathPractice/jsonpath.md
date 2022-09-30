@@ -1,0 +1,13 @@
+1. $.property1
+2. $.bus
+3. $.bus.price
+4. $.vehicles.car.price
+5. $.car.wheels
+6. $.car.wheels[2]
+7. $.car.wheels[2].model
+8. $.employee.payslips
+9. $.employee.payslips[2]
+10. $.employee.payslips[2].amount
+11. $.prizes[5].laureates[1]
+12. $.[0]
+13. $.[0,3]
