@@ -1,0 +1,2 @@
+k create priorityclass existing-priority --value=1000 --description="Existing user priority class"
+k create deploy busybox-logger --image=busybox --namespace=priority --replicas=2 -- sh -c "while true; do echo 'Logging....'; sleep 5; done"
