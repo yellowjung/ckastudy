@@ -89,7 +89,6 @@ nodes:
 - role: worker
 networking:
   disableDefaultCNI: true # 기본 CNI(kindnetd) 비활성화
-  podSubnet: "10.244.0.0/16" # Calico/Flannel 기본값
 EOF
     ;;
 
