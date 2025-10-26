@@ -67,34 +67,11 @@ nodes:
     hostPort: 30004
   - containerPort: 30005
     hostPort: 30005
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
 - role: worker
-  extraPortMappings:
-  - containerPort: 30000
-    hostPort: 30000
-  - containerPort: 30001
-    hostPort: 30001
-  - containerPort: 30002
-    hostPort: 30002
-  - containerPort: 30003
-    hostPort: 30003
-  - containerPort: 30004
-    hostPort: 30004
-  - containerPort: 30005
-    hostPort: 30005
 - role: worker
-  extraPortMappings:
-  - containerPort: 30000
-    hostPort: 30000
-  - containerPort: 30001
-    hostPort: 30001
-  - containerPort: 30002
-    hostPort: 30002
-  - containerPort: 30003
-    hostPort: 30003
-  - containerPort: 30004
-    hostPort: 30004
-  - containerPort: 30005
-    hostPort: 30005
 EOF
     ;;
 
@@ -140,7 +117,7 @@ echo "---"
 
 # --- 옵션별 후속 안내 ---
 if [ "$OPTION" == "2" ]; then
-    echo "💡 [팁] 옵션 2로 생성했습니다. Service YAML 작성 시 nodePort를 30000 ~ 30005 사이로 고정하고, Mac 터미널에서 'curl localhost:3000x'로 테스트하세요."
+    echo "💡 [팁] 옵션 2로 생성했습니다. Service YAML 작성 시 nodePort를 30000 ~ 30005 사이로 고정하고, Mac 터미널에서 'curl localhost:3000x'로 테스트하세요. 443 port도 오픈 되어있습니다."
 fi
 
 if [ "$OPTION" == "3" ]; then
