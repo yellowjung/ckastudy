@@ -11,7 +11,7 @@ usage() {
     echo ""
     echo "이미지 이름을 입력하여 이미지를 kind에 직접 주입합니다."
     echo ""
-    echo "  ./insert-docker-image.sh {이미지 이름} "
+    echo "  ./insert-docker-image.sh {이미지 이름}:{tag} "
     echo ""
     exit 1
 }
