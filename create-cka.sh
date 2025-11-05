@@ -89,6 +89,7 @@ nodes:
 - role: worker
 networking:
   disableDefaultCNI: true # 기본 CNI(kindnetd) 비활성화
+  podSubnet: 192.168.0.0/16
 EOF
     ;;
 
