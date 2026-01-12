@@ -11,9 +11,10 @@ usage() {
     echo ""
     echo "옵션을 선택하여 CKA 연습용 kind 클러스터를 생성합니다."
     echo ""
-    echo "  1 : [기본] Kind 클러스터 (기본 CNI 'kindnetd' 설치, 포트 맵핑 없음)"
-    echo "  2 : [추천] NodePort 맵핑 클러스터 (localhost로 curl 테스트 가능)"
-    echo "  3 : [고급] CNI 미설치 클러스터 (Calico 등 수동 CNI 설치 연습용)"
+    echo "  1 : [기본] Kind 클러스터 (기본 CNI, 포트/마운트 없음)"
+    echo "  2 : [추천] NodePort 맵핑 클러스터 (localhost 접속 가능)"
+    echo "  3 : [고급] CNI 미설치 클러스터 (수동 CNI 설치 연습용)"
+    echo "  4 : [NEW] NodePort + 로컬 디스크 마운트 (로그 수집/DB용)"
     echo ""
     exit 1
 }
@@ -31,7 +32,7 @@ fi
 # --- 옵션에 따라 YAML 설정 파일 동적 생성 ---
 case $OPTION in
   1)
-    echo "➡️ 옵션 1: [기본] 클러스터를 생성합니다. (kindnetd CNI, 포트 맵핑 없음)"
+    echo "➡️ 옵션 1: [기본] 클러스터를 생성합니다."
     cat <<EOF > ${CONFIG_FILE}
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -45,9 +46,6 @@ EOF
   
   2)
     echo "✅ 옵션 2: [NodePort 맵핑] 클러스터를 생성합니다."
-    echo "   (localhost:30000 ~ 30005 포트로 Mac에서 직접 curl 가능)"
-    
-    # CKA 연습용으로 6개(30000~30005) 포트를 미리 맵핑합니다.
     cat <<EOF > ${CONFIG_FILE}
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -77,8 +75,6 @@ EOF
 
   3)
     echo "⚠️ 옵션 3: [CNI 미설치] 클러스터를 생성합니다."
-    echo "   (Calico 등 수동 CNI 설치 연습용)"
-    
     cat <<EOF > ${CONFIG_FILE}
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -88,8 +84,65 @@ nodes:
 - role: worker
 - role: worker
 networking:
-  disableDefaultCNI: true # 기본 CNI(kindnetd) 비활성화
+  disableDefaultCNI: true
   podSubnet: 192.168.0.0/16
+EOF
+    ;;
+
+  4)
+    echo "💾 옵션 4: [NodePort + 디스크 마운트] 클러스터를 생성합니다."
+    echo ""
+    
+    # --- 경로 입력 받기 (옵션 4에서만 실행) ---
+    echo "📂 [설정] 로그 및 데이터를 저장할 로컬 경로를 입력하세요."
+    echo "   (엔터를 누르면 현재 폴더의 './cka-logs'를 사용합니다)"
+    read -p "   입력 > " INPUT_PATH
+
+    # 기본값 설정
+    if [ -z "$INPUT_PATH" ]; then
+        INPUT_PATH="./cka-logs"
+    fi
+
+    # 절대 경로 변환 및 디렉토리 생성
+    mkdir -p "$INPUT_PATH"
+    chmod -R 777 "$INPUT_PATH" # 권한 부여
+    HOST_DIR=$(cd "$INPUT_PATH" && pwd)
+
+    echo "   ✅ 로컬 경로: $HOST_DIR <---> Kind 내부: /var/log/k8s-data"
+    
+    # 마운트 설정 변수
+    MOUNT_CONFIG="  extraMounts:
+  - hostPath: ${HOST_DIR}
+    containerPath: /var/log/k8s-data"
+
+    # 설정 파일 생성 (Port Mapping + Mount 모두 포함)
+    cat <<EOF > ${CONFIG_FILE}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: ${CLUSTER_NAME}
+nodes:
+- role: control-plane
+${MOUNT_CONFIG}
+  extraPortMappings:
+  - containerPort: 30000
+    hostPort: 30000
+  - containerPort: 30001
+    hostPort: 30001
+  - containerPort: 30002
+    hostPort: 30002
+  - containerPort: 30003
+    hostPort: 30003
+  - containerPort: 30004
+    hostPort: 30004
+  - containerPort: 30005
+    hostPort: 30005
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+- role: worker
+${MOUNT_CONFIG}
+- role: worker
+${MOUNT_CONFIG}
 EOF
     ;;
 
@@ -111,17 +164,15 @@ echo "---"
 echo "kubectl 클러스터 정보:"
 kubectl cluster-info --context kind-${CLUSTER_NAME}
 echo "---"
-echo "kubectl 노드 목록:"
-kubectl get nodes
-echo "---"
 
 # --- 옵션별 후속 안내 ---
 if [ "$OPTION" == "2" ]; then
-    echo "💡 [팁] 옵션 2로 생성했습니다. Service YAML 작성 시 nodePort를 30000 ~ 30005 사이로 고정하고, Mac 터미널에서 'curl localhost:3000x'로 테스트하세요. 443 port도 오픈 되어있습니다."
+    echo "💡 [팁] NodePort 사용 가능: localhost:30000~30005"
 fi
-
 if [ "$OPTION" == "3" ]; then
-    echo "🚨 [중요] 옵션 3로 생성했습니다. CNI가 없어 노드(Node)가 'NotReady' 상태입니다."
-    echo "   지금 바로 Calico나 Flannel 같은 CNI를 수동으로 설치해야 합니다."
-    echo "   예: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml"
+    echo "🚨 [중요] CNI를 수동으로 설치하세요."
+fi
+if [ "$OPTION" == "4" ]; then
+    echo "💡 [팁] NodePort: 30000~30005 / Log Path: $HOST_DIR"
+    echo "        PV 생성 시 'hostPath: /var/log/k8s-data/...' 를 사용하세요."
 fi
